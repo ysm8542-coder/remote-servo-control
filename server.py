@@ -46,7 +46,7 @@ async def handler(websocket):
                     print("[WARN] ESP8266이 아직 연결되지 않음 - 명령 무시됨")
 
             # --- ESP8266 -> 모든 핸드폰 : 자이로 데이터 브로드캐스트 ---
-            if role == "esp8266" and "gyro" in data:
+            if role == "esp8266" and "obstacle" in data:
                 dead = set()
                 for phone_ws in clients["phone"]:
                     try:
