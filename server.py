@@ -1,14 +1,3 @@
-"""
-NUCLEO32 F442RE + ESP8266 원격 서보제어 + MPU-6050 자이로 모니터링용 WebSocket 서버
-
-역할:
-- ESP8266이 접속하면 "esp8266 클라이언트"로 등록
-  - 핸드폰이 보낸 서보 각도 명령을 그대로 ESP8266에 전달
-  - ESP8266이 보낸 자이로 데이터를 모든 핸드폰에 브로드캐스트
-- 핸드폰(웹페이지)이 접속하면 "phone 클라이언트"로 등록
-
-Render 배포 시 Start Command: python server.py
-"""
 
 import asyncio
 import json
