@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+<title>원격 서보 + 자이로 모니터</title>
+<style>
+  html, body {
+    margin: 0;
+    min-height: 100%;
+    background: #111;
+    color: #eee;
+    font-family: -apple-system, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px;
+    box-sizing: border-box;
+  }
+  #status {
+    font-size: 14px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: #333;
+    margin-bottom: 20px;
+  }
+  #status.connected { background: #1b5e20; }
+  #status.disconnected { background: #6a1b1b; }
+
+  .panel {
+    width: 100%;
+    max-width: 420px;
+    background: #1c1c1c;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+    box-sizing: border-box;
+  }
+
+  .panel h3 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    color: #aaa;
+    font-weight: normal;
+  }
+
+  #angle-slider {
+    width: 100%;
+  }
+
+  #angle-value {
+    text-align: center;
+    font-size: 20px;
+    margin-top: 8px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 15px;
+  }
+  td {
+    padding: 6px 4px;
+    border-bottom: 1px solid #333;
+  }
+  td.label { color: #888; width: 40%; }
+  td.value { text-align: right; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+
+<div id="status" class="disconnected">서버 연결 대기중...</div>
+
+<div class="panel">
+  <h3>서보 각도 제어</h3>
+  <input type="range" id="angle-slider" min="0" max="180" value="90" />
+  <div id="angle-value">각도: 90°</div>
+</div>
+
+<div class="panel">
+  <h3>MPU-6050 실시간 값</h3>
+  <table>
+    <tr><td class="label">가속도 X</td><td class="value" id="ax">-</td></tr>
+    <tr><td class="label">가속도 Y</td><td class="value" id="ay">-</td></tr>
+    <tr><td class="label">가속도 Z</td><td class="value" id="az">-</td></tr>
+    <tr><td class="label">자이로 X</td><td class="value" id="gx">-</td></tr>
+    <tr><td class="label">자이로 Y</td><td class="value" id="gy">-</td></tr>
+    <tr><td class="label">자이로 Z</td><td class="value" id="gz">-</td></tr>
+  </table>
+</div>
+
+<script>
+  // ---- 여기를 Render 배포 주소로 수정하세요 ----
+  const SERVER_URL = "wss://remote-servo-control-1.onrender.com";
+  // ------------------------------------------
+
+  const statusEl = document.getElementById("status");
+  const sliderEl = document.getElementById("angle-slider");
+  const angleValueEl = document.getElementById("angle-value");
+
+  let ws;
+
+  function connect() {
+    ws = new WebSocket(SERVER_URL);
+
+    ws.onopen = () => {
+      statusEl.textContent = "서버 연결됨";
+      statusEl.className = "connected";
+      ws.send(JSON.stringify({ role: "phone" }));
+    };
+
+    ws.onmessage = (event) => {
+      let data;
+      try {
+        data = JSON.parse(event.data);
+      } catch (e) {
+        return;
+      }
+
+      if (data.gyro) {
+        document.getElementById("ax").textContent = data.gyro.ax.toFixed(3) + " g";
+        document.getElementById("ay").textContent = data.gyro.ay.toFixed(3) + " g";
+        document.getElementById("az").textContent = data.gyro.az.toFixed(3) + " g";
+        document.getElementById("gx").textContent = data.gyro.gx.toFixed(2) + " °/s";
+        document.getElementById("gy").textContent = data.gyro.gy.toFixed(2) + " °/s";
+        document.getElementById("gz").textContent = data.gyro.gz.toFixed(2) + " °/s";
+      }
+    };
+
+    ws.onclose = () => {
+      statusEl.textContent = "연결 끊김 - 재접속 중...";
+      statusEl.className = "disconnected";
+      setTimeout(connect, 2000);
+    };
+
+    ws.onerror = () => {
+      ws.close();
+    };
+  }
+
+  connect();
+
+  let lastSent = 0;
+  sliderEl.addEventListener("input", () => {
+    const angle = parseInt(sliderEl.value, 10);
+    angleValueEl.textContent = `각도: ${angle}°`;
+
+    const nowTs = Date.now();
+    if (nowTs - lastSent < 50) return;
+    lastSent = nowTs;
+
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ role: "phone", angle }));
+    }
+  });
+</script>
+
+</body>
+</html>
