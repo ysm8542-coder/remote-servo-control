@@ -54,17 +54,24 @@
     margin-top: 8px;
   }
 
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 15px;
+  #obstacle-indicator {
+    text-align: center;
+    padding: 24px 0;
+    border-radius: 8px;
+    font-size: 20px;
+    font-weight: bold;
+    transition: background 0.15s;
+    background: #333;
+    color: #aaa;
   }
-  td {
-    padding: 6px 4px;
-    border-bottom: 1px solid #333;
+  #obstacle-indicator.clear {
+    background: #1b5e20;
+    color: #eee;
   }
-  td.label { color: #888; width: 40%; }
-  td.value { text-align: right; font-variant-numeric: tabular-nums; }
+  #obstacle-indicator.detected {
+    background: #b71c1c;
+    color: #fff;
+  }
 </style>
 </head>
 <body>
@@ -78,20 +85,13 @@
 </div>
 
 <div class="panel">
-  <h3>MPU-6050 실시간 값</h3>
-  <table>
-    <tr><td class="label">가속도 X</td><td class="value" id="ax">-</td></tr>
-    <tr><td class="label">가속도 Y</td><td class="value" id="ay">-</td></tr>
-    <tr><td class="label">가속도 Z</td><td class="value" id="az">-</td></tr>
-    <tr><td class="label">자이로 X</td><td class="value" id="gx">-</td></tr>
-    <tr><td class="label">자이로 Y</td><td class="value" id="gy">-</td></tr>
-    <tr><td class="label">자이로 Z</td><td class="value" id="gz">-</td></tr>
-  </table>
+  <h3>KY-032 장애물 감지</h3>
+  <div id="obstacle-indicator">대기중...</div>
 </div>
 
 <script>
   // ---- 여기를 Render 배포 주소로 수정하세요 ----
-  const SERVER_URL = "wss://remote-servo-control-1.onrender.com";
+  const SERVER_URL = "https://remote-servo-control.onrender.com"
   // ------------------------------------------
 
   const statusEl = document.getElementById("status");
@@ -117,13 +117,15 @@
         return;
       }
 
-      if (data.gyro) {
-        document.getElementById("ax").textContent = data.gyro.ax.toFixed(3) + " g";
-        document.getElementById("ay").textContent = data.gyro.ay.toFixed(3) + " g";
-        document.getElementById("az").textContent = data.gyro.az.toFixed(3) + " g";
-        document.getElementById("gx").textContent = data.gyro.gx.toFixed(2) + " °/s";
-        document.getElementById("gy").textContent = data.gyro.gy.toFixed(2) + " °/s";
-        document.getElementById("gz").textContent = data.gyro.gz.toFixed(2) + " °/s";
+      if (typeof data.obstacle === "boolean") {
+        const indicator = document.getElementById("obstacle-indicator");
+        if (data.obstacle) {
+          indicator.textContent = "⚠ 장애물 감지됨";
+          indicator.className = "detected";
+        } else {
+          indicator.textContent = "✓ 장애물 없음";
+          indicator.className = "clear";
+        }
       }
     };
 
